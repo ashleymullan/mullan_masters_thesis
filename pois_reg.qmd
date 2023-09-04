@@ -1,0 +1,52 @@
+---
+title: "pois_reg"
+format: html
+---
+
+The clean version of the score function is:
+
+$U = \frac{e^{X^Ty}(1 - \lambda^y)}{ye^{\lambda}}$
+
+The clean version of the Fisher information is:
+
+$\frac{-e^{X^Ty}\lambda X[y + 1 - \lambda^y]}{ye^{\lambda}}$
+
+```{r}
+#score function
+U <- function(beta, X, y) {
+  l <- exp(t(beta) %*% X) #l is short for lambda
+  (exp(t(X) %*% y) * (1 - l^y)) / (y * exp(l))
+}
+
+#Fisher information
+info <- function(beta, X, y) {
+  l <- exp(t(beta) %*% X) #l is short for lambda
+  (-1 * exp(t(X) %*% y) %*% X) %*% (y + 1 - l^y) / (y %*% exp(l))
+}
+```
+
+```{r}
+find_beta <- function(start_guess, X, y) {
+  beta_curr <- start_guess
+  diff <- 1
+  iterations <- 0
+  while(diff > 0.0001){
+    beta_next <- beta_curr + solve(info(beta_curr)) %*% U(beta_curr)
+    diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
+    iterations <- iterations + 1
+    beta_curr <- beta_next
+  }
+  beta_curr
+}
+```
+
+Now, to test.
+```{r}
+set.seed(1031)
+X <- t(as.matrix(sample(1:10, size = 10, replace = TRUE)))
+true_beta <- c(2)
+true_lambda <- exp(t(true_beta) %*% X)
+y <- rpois(10, lambda = true_lambda)
+
+find_beta(start_guess = c(1.8), X, y)
+```

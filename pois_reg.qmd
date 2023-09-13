@@ -3,37 +3,83 @@ title: "pois_reg"
 format: html
 ---
 
-The clean version of the score function is:
+The clean versions of the score and information functions unfortunately do not live in matrix syntax.
 
-$U = \frac{e^{X^Ty}(1 - \lambda^y)}{ye^{\lambda}}$
-
-The clean version of the Fisher information is:
-
-$\frac{-e^{X^Ty}\lambda X[y + 1 - \lambda^y]}{ye^{\lambda}}$
 
 ```{r}
 #score function
-U <- function(beta, X, y) {
-  l <- exp(t(beta) %*% X) #l is short for lambda
-  (exp(t(X) %*% y) * (1 - l^y)) / (y * exp(l))
+U <- function(beta, x, y) {
+  
+  #initialize lambda, score, sample size
+  l <- beta[1] + beta[2]*x
+  score <- rep(0, times = 2)
+  n <- length(x)
+  
+  #fill first element of score
+  sum <- 0
+  for(i in 1:n){
+    sum <- sum + (y[i] - l[i])  
+  }
+  score[1] <- sum
+  
+  #fill second element of score
+  sum <- 0
+  for(i in 1:n){
+    sum <- sum + (x[i] * (y[i] - l[i])) 
+  }
+  score[2] <- sum
+  
+  #return score
+  score
 }
 
 #Fisher information
-info <- function(beta, X, y) {
-  l <- exp(t(beta) %*% X) #l is short for lambda
-  (-1 * exp(t(X) %*% y) %*% X) %*% (y + 1 - l^y) / (y %*% exp(l))
+info <- function(beta, x, y) {
+  
+  #initialize Hessian, lambda, sample size
+  Hessian <- matrix(data = c(0,0,0,0), nrow = 2, ncol = 2)
+  l <- beta[1] + beta[2]*x
+  n <- length(x)
+  
+  #fill top left entry in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + l[i]
+  }
+  Hessian[1,1] <- -1 * sum
+  
+  #fill mixed entries in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + x[i]*l[i]
+  }
+  Hessian[1,2] <- -1 * sum
+  Hessian[2,1] <- -1 * sum
+  
+  #fill in bottom right entry in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + (x[i] * x[i] * l[i])
+  }
+  Hessian[2,2] <- -1 * sum
+  
+  #return Hessian
+  Hessian
 }
 ```
 
 ```{r}
-find_beta <- function(start_guess, X, y) {
+find_beta <- function(start_guess, x, y) {
   beta_curr <- start_guess
   diff <- 1
   iterations <- 0
   while(diff > 0.0001){
-    beta_next <- beta_curr + solve(info(beta_curr)) %*% U(beta_curr)
+    beta_next <- beta_curr + solve(info(beta_curr, x, y)) %*% U(beta_curr, x, y)
+    cat("beta_next:", beta_next)
     diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
+    cat("diff:", diff)
     iterations <- iterations + 1
+    cat("iterations:", iterations)
     beta_curr <- beta_next
   }
   beta_curr
@@ -43,10 +89,15 @@ find_beta <- function(start_guess, X, y) {
 Now, to test.
 ```{r}
 set.seed(1031)
-X <- t(as.matrix(sample(1:10, size = 10, replace = TRUE)))
-true_beta <- c(2)
-true_lambda <- exp(t(true_beta) %*% X)
-y <- rpois(10, lambda = true_lambda)
 
-find_beta(start_guess = c(1.8), X, y)
+x <- c(1,2,3,4)
+beta <- c(5,6)
+lambda <- exp(5 + 6 * x)
+y <- rpois(4, lambda)
+
+find_beta(c(4.9, 5.9), x, y) #problem
+
+summary(glm(y ~ x, family = "poisson")) #did not converge, maybe that's why?
+
 ```
+

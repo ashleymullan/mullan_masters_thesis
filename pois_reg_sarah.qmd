@@ -1,0 +1,117 @@
+---
+title: "pois_reg"
+format: html
+---
+
+The clean versions of the score and information functions unfortunately do not live in matrix syntax.
+
+
+```{r}
+#score function
+U <- function(beta, x, y) {
+  
+  #initialize lambda, score, sample size
+  l <- exp(beta[1] + beta[2]*x)
+  score <- rep(0, times = 2)
+  n <- length(x)
+  
+  #fill first element of score
+  sum <- 0
+  for(i in 1:n){
+    sum <- sum + (y[i] - l[i])  
+  }
+  score[1] <- sum
+  
+  #fill second element of score
+  sum <- 0
+  for(i in 1:n){
+    sum <- sum + (x[i] * (y[i] - l[i])) 
+  }
+  score[2] <- sum
+  
+  #return score
+  score
+}
+
+#Fisher information
+info <- function(beta, x, y) {
+  
+  #initialize Hessian, lambda, sample size
+  Hessian <- matrix(data = c(0,0,0,0), nrow = 2, ncol = 2)
+  l <- exp(beta[1] + beta[2]*x)
+  n <- length(x)
+  
+  #fill top left entry in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + l[i]
+  }
+  Hessian[1,1] <- -1 * sum
+  
+  #fill mixed entries in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + x[i]*l[i]
+  }
+  Hessian[1,2] <- -1 * sum
+  Hessian[2,1] <- -1 * sum
+  
+  #fill in bottom right entry in Hessian
+  sum <- 0
+  for(i in 1:n){
+    sum = sum + (x[i] * x[i] * l[i])
+  }
+  Hessian[2,2] <- -1 * sum
+  
+  #return Hessian
+  Hessian
+}
+```
+
+```{r}
+find_beta <- function(start_guess, x, y, verbose = FALSE) {
+  beta_curr <- start_guess
+  diff <- 1
+  iterations <- 0
+  while(diff > 0.0001){
+    beta_next <- beta_curr - solve(info(beta_curr, x, y)) %*% U(beta_curr, x, y)
+    diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
+    iterations <- iterations + 1
+    beta_curr <- beta_next
+    if (verbose) {
+      print(cat("beta_next:", beta_next))
+      print(cat("diff:", diff))
+      print(cat("iterations:", iterations))
+    }
+  }
+  beta_curr
+}
+```
+
+Now, to test.
+```{r}
+set.seed(1031)
+
+x <- c(1,2,3,4)
+beta <- c(5,6)
+lambda <- exp(5 + 6 * x)
+y <- rpois(4, lambda)
+
+find_beta(c(4.9, 5.9), x, y) #problem
+
+summary(glm(y ~ x, family = "poisson")) #did not converge, maybe that's why?
+
+```
+
+```{r}
+b0 = .5
+b1 = .25
+x = runif(100, min = 0, max = 1)
+lambda = exp(b0 + b1*x)
+y = rpois(100, lambda = lambda) 
+
+set.seed(1031) ## happy birthday!
+find_beta(c(0, 0), x, y) #problem
+
+summary(glm(y ~ x, family = "poisson")) #did not converge, maybe that's why?
+```

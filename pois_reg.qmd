@@ -3,6 +3,10 @@ title: "pois_reg"
 format: html
 ---
 
+```{r}
+library(ggplot2)
+```
+
 TO DO: update information, update find_beta, extend sim
 
 The clean versions of the score vector and Fisher information do not exist, as we derive them by component.
@@ -24,7 +28,7 @@ U <- function(beta, X, Y, Z = NULL, data) {
   data <-  data.matrix(frame = data) #includes X,Z, and potentially other covars
   
   #initialize lambda, score
-  l <- exp(beta[1] + data[, c(X, Z)] %*% beta[-1]) ## dimension n x 1
+  l <- exp(beta[1] + data[, c(X, Z)] %*% matrix(beta[-1], ncol = 1)) ## dimension n x 1
   score <- matrix(data = 0, 
                   nrow = nrow(beta)) ## dimension p x 1 (where p = dim(beta))
   
@@ -79,7 +83,8 @@ find_beta <- function(start_guess, x, y,
   diff <- maxtol + 1
   iterations <- 0
   while(diff > maxtol & iterations <= maxiter){
-    beta_next <- beta_curr - solve(info(beta_curr, x, y)) %*% U(beta_curr, x, y)
+    beta_next <- beta_curr - solve(info(beta_curr, x, y)) %*% 
+      U(beta = beta_curr, X = "x", Y = "y", Z = NULL, data = data.frame(x, y))#U(beta_curr, x, y)
     diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
     iterations <- iterations + 1
     beta_curr <- beta_next

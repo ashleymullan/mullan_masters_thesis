@@ -3,31 +3,23 @@ title: "pois_reg"
 format: html
 ---
 
-The clean versions of the score and information functions unfortunately do not live in matrix syntax.
+CURRENT ISSUE: wrote longer example but keep running into invertibility issue
 
+The clean versions of the score vector and Fisher information do not exist, as we derive them by component.
 
 ```{r}
 #score function
 U <- function(beta, x, y) {
   
-  #initialize lambda, score, sample size
-  l <- beta[1] + beta[2]*x
+  #initialize lambda, score
+  l <- exp(beta[1] + beta[2]*x)
   score <- rep(0, times = 2)
-  n <- length(x)
   
   #fill first element of score
-  sum <- 0
-  for(i in 1:n){
-    sum <- sum + (y[i] - l[i])  
-  }
-  score[1] <- sum
+  score[1] <- sum(y - l)
   
   #fill second element of score
-  sum <- 0
-  for(i in 1:n){
-    sum <- sum + (x[i] * (y[i] - l[i])) 
-  }
-  score[2] <- sum
+  score[2] <- sum(x * (y - l))
   
   #return score
   score
@@ -36,53 +28,50 @@ U <- function(beta, x, y) {
 #Fisher information
 info <- function(beta, x, y) {
   
-  #initialize Hessian, lambda, sample size
-  Hessian <- matrix(data = c(0,0,0,0), nrow = 2, ncol = 2)
-  l <- beta[1] + beta[2]*x
-  n <- length(x)
+  #initialize matrix, lambda
+  I <- matrix(data = c(0,0,0,0), nrow = 2, ncol = 2)
+  l <- exp(beta[1] + beta[2]*x)
+
   
-  #fill top left entry in Hessian
-  sum <- 0
-  for(i in 1:n){
-    sum = sum + l[i]
-  }
-  Hessian[1,1] <- -1 * sum
+  #fill top left entry in matrix
+  I[1,1] <- -1 * sum(l)
   
-  #fill mixed entries in Hessian
-  sum <- 0
-  for(i in 1:n){
-    sum = sum + x[i]*l[i]
-  }
-  Hessian[1,2] <- -1 * sum
-  Hessian[2,1] <- -1 * sum
+  #fill mixed entries in matrix
+  I[1,2] <- I[2,1] <- -1 * sum(x*l)
   
-  #fill in bottom right entry in Hessian
-  sum <- 0
-  for(i in 1:n){
-    sum = sum + (x[i] * x[i] * l[i])
-  }
-  Hessian[2,2] <- -1 * sum
+  #fill in bottom right entry in matrix
+  I[2,2] <- -1 * sum(x^2 * l)
   
-  #return Hessian
-  Hessian
+  #return matrix
+  I
 }
 ```
 
 ```{r}
-find_beta <- function(start_guess, x, y) {
+find_beta <- function(start_guess, x, y,
+                      maxtol = 0.00001,
+                      maxiter = 1000,
+                      verbose = FALSE) {
   beta_curr <- start_guess
-  diff <- 1
+  diff <- maxtol + 1
   iterations <- 0
-  while(diff > 0.0001){
-    beta_next <- beta_curr + solve(info(beta_curr, x, y)) %*% U(beta_curr, x, y)
-    cat("beta_next:", beta_next)
+  while(diff > maxtol & iterations <= maxiter){
+    beta_next <- beta_curr - solve(info(beta_curr, x, y)) %*% U(beta_curr, x, y)
     diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
-    cat("diff:", diff)
     iterations <- iterations + 1
-    cat("iterations:", iterations)
     beta_curr <- beta_next
+    if(verbose) {
+      print(paste("beta_next:", beta_next,"\n"))
+      print(paste("diff:", diff, "\n"))
+      print(paste("iterations:", iterations, "\n"))
+    }
   }
-  beta_curr
+  if(diff > maxtol & iterations >= maxiter){
+    conv_msg = "We hit the maximum number of iterations but did not converge."
+  }
+  else { conv_msg = "We have achieved convergence!"}
+  return(list(estimates = beta_curr,
+              convergence = conv_msg))
 }
 ```
 
@@ -90,14 +79,32 @@ Now, to test.
 ```{r}
 set.seed(1031)
 
-x <- c(1,2,3,4)
-beta <- c(5,6)
-lambda <- exp(5 + 6 * x)
-y <- rpois(4, lambda)
+beta0 <- 0.5
+beta1 <- 0.25
+x <- runif(100, min = 0, max = 1) #generate 100 rows from U(0,1)
+lambda <- exp(beta0 + beta1*x)
+y <- rpois(100, lambda)
 
-find_beta(c(4.9, 5.9), x, y) #problem
+my_est <- round(find_beta(c(0,0), x, y)$estimates,2) 
 
-summary(glm(y ~ x, family = "poisson")) #did not converge, maybe that's why?
+default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
 
+```
+
+```{r}
+set.seed(1031)
+sim <- NULL
+for(i in 1:1000){
+  beta0 <- runif(1, min = 1, max = 2)
+  beta1 <- runif(1, min = 2, max = 3)
+  x <- runif(1, min = 0, max = 1)
+  lambda <- exp(beta0 + beta1*x)
+  y <- rpois(100, lambda)
+  
+  mine <- find_beta(c(0,0), x, y)$estimates
+  default <- glm(y ~ x, family = "poisson")
+  def <- c(default$coefficients[1], default$coefficients[2])
+  sim <- cbind(sim, round(mine - def, 2))
+}
 ```
 

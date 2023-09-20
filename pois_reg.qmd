@@ -3,23 +3,46 @@ title: "pois_reg"
 format: html
 ---
 
-CURRENT ISSUE: wrote longer example but keep running into invertibility issue
+TO DO: update information, update find_beta, extend sim
 
 The clean versions of the score vector and Fisher information do not exist, as we derive them by component.
 
+
+
+U(beta = c(0.5, 0.25, 0.1), 
+  Y = "y", 
+  X = "x", 
+  Z = "z", 
+  data = dat)
+
 ```{r}
 #score function
-U <- function(beta, x, y) {
+U <- function(beta, X, Y, Z = NULL, data) {
+  
+  #turn inputs into matrices
+  beta <- matrix(data = beta, ncol = 1)
+  data <-  data.matrix(frame = data) #includes X,Z, and potentially other covars
   
   #initialize lambda, score
-  l <- exp(beta[1] + beta[2]*x)
-  score <- rep(0, times = 2)
+  l <- exp(beta[1] + data[, c(X, Z)] %*% beta[-1]) ## dimension n x 1
+  score <- matrix(data = 0, 
+                  nrow = nrow(beta)) ## dimension p x 1 (where p = dim(beta))
+  
+  # save Y - lambda 
+  yml = data[, Y] - l ## dimension n x 1
   
   #fill first element of score
-  score[1] <- sum(y - l)
+  score[1] <- sum(yml)
+    
+  # save a transformed version of Y - lambda
+  ## same column, replicated once for each covariate in (X, Z)
+  yml_wide = matrix(data = yml, 
+                        nrow = length(yml),
+                        ncol = length(c(X, Z)), 
+                        byrow = FALSE) ## dimension n x (p - 1)
   
-  #fill second element of score
-  score[2] <- sum(x * (y - l))
+  #fill remaining elements of score
+  score[-1] <- colSums(data[, c(X, Z)] * yml_wide)
   
   #return score
   score
@@ -75,7 +98,7 @@ find_beta <- function(start_guess, x, y,
 }
 ```
 
-Now, to test.
+Now, to test the simple case.
 ```{r}
 set.seed(1031)
 
@@ -94,18 +117,27 @@ default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
 ```{r}
 set.seed(1031)
 sim <- NULL
+simplecase <- TRUE
+
 for(i in 1:1000){
   beta0 <- runif(1, min = 1, max = 2)
   beta1 <- runif(1, min = 2, max = 3)
-  x <- runif(100, min = 0, max = 1)
-  lambda <- exp(beta0 + beta1*x)
-  y <- rpois(100, lambda)
+  beta2 <- runif(1, min = 3, max = 4)
+  
+  z <- ifelse(simplecase, 
+              rep(0, times = 100), #z is zero vector
+              rbinom(n = 100, size = 1, prob = 0.3)) #z ~ Bern(0.3)
+  x <- runif(100, min = 0, max = 1 + z) #X|Z ~ U(0,1+Z)
+  lambda <- exp(beta0 + beta1*x + beta2*z) #mean of Y|X,Z
+  y <- rpois(100, lambda) #Y|X,Z ~ Pois(lambda)
   
   mine <- find_beta(c(0,0), x, y)$estimates
   default <- glm(y ~ x, family = "poisson")
   def <- c(default$coefficients[1], default$coefficients[2])
   sim <- cbind(sim, mine - def)
 }
+
+
 
 #slopes are a little over, intercepts are a little under. interesting
 sim |> t() |> data.frame() |> 

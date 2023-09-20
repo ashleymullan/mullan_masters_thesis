@@ -97,14 +97,26 @@ sim <- NULL
 for(i in 1:1000){
   beta0 <- runif(1, min = 1, max = 2)
   beta1 <- runif(1, min = 2, max = 3)
-  x <- runif(1, min = 0, max = 1)
+  x <- runif(100, min = 0, max = 1)
   lambda <- exp(beta0 + beta1*x)
   y <- rpois(100, lambda)
   
   mine <- find_beta(c(0,0), x, y)$estimates
   default <- glm(y ~ x, family = "poisson")
   def <- c(default$coefficients[1], default$coefficients[2])
-  sim <- cbind(sim, round(mine - def, 2))
+  sim <- cbind(sim, mine - def)
 }
+
+#slopes are a little over, intercepts are a little under. interesting
+sim |> t() |> data.frame() |> 
+  ggplot(aes(x = X1)) + 
+  geom_histogram(bins = 100) +
+  labs(x = "Diff",
+       title = "intercept") 
+sim |> t() |> data.frame() |> 
+  ggplot(aes(x = X2)) + 
+  geom_histogram(bins = 100) +
+  labs(x = "Diff", 
+       title = "slope")
 ```
 

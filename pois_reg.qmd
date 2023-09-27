@@ -3,6 +3,10 @@ title: "pois_reg"
 format: html
 ---
 
+```{r}
+library(ggplot2)
+```
+
 TO DO: update information, update find_beta, extend sim
 
 
@@ -21,12 +25,16 @@ U <- function(beta, X, Y, Z = NULL, data) {
   data <- data.matrix(frame = data) #holds X, Z, and other potential covariates
   
   #initialize lambda, score
+<<<<<<< HEAD
   if(is.null(Z)){
     l <- exp(beta[1] + beta[2] * X) 
   }
   else {
     l <- exp(beta[1] + data[, c(X, Z)] %*% beta[-1]) ## dimension n x 1
   }
+=======
+  l <- exp(beta[1] + data[, c(X, Z)] %*% matrix(beta[-1], ncol = 1)) ## dimension n x 1
+>>>>>>> main
   score <- matrix(data = 0, 
                   nrow = nrow(beta)) ## dimension p x 1 (where p = dim(beta))
   
@@ -93,7 +101,12 @@ find_beta <- function(start_guess, x, y, z, data,
   diff <- maxtol + 1
   iterations <- 0
   while(diff > maxtol & iterations <= maxiter){
+<<<<<<< HEAD
     beta_next <- beta_curr - solve(info(beta_curr, x, z, data)) %*% U(beta_curr, x, y, z, data)
+=======
+    beta_next <- beta_curr - solve(info(beta_curr, x, y)) %*% 
+      U(beta = beta_curr, X = "x", Y = "y", Z = NULL, data = data.frame(x, y))#U(beta_curr, x, y)
+>>>>>>> main
     diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
     iterations <- iterations + 1
     beta_curr <- beta_next

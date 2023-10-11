@@ -4,7 +4,7 @@ format: html
 ---
 
 ```{r}
-library(ggplot2)
+library(tidyverse)
 ```
 
 TO DO: update information, update find_beta, extend sim
@@ -17,7 +17,7 @@ U(beta = c(0.5, 0.25, 0.1),
   data = dat)
 
 ```{r}
-#score function
+#score function (DOES NOT HANDLE NULL Z APPROPRIATELY)
 U <- function(beta, X, Y, Z = NULL, data) {
   
   #turn inputs into matrices
@@ -26,7 +26,7 @@ U <- function(beta, X, Y, Z = NULL, data) {
   
   #initialize lambda, score
   if(is.null(Z)){
-    l <- exp(beta[1] + beta[2] * X) 
+    l <- exp(beta[1] + beta[2] * data[, X]) 
   }
   else {
     l <- exp(beta[1] + data[, c(X, Z)] %*% beta[-1]) ## dimension n x 1
@@ -56,34 +56,76 @@ U <- function(beta, X, Y, Z = NULL, data) {
 
 #Fisher information
 info <- function(beta, X, Z = NULL, data) {
-
+  out <- list()
   #turn inputs into matrices
   beta <- matrix(data = beta, ncol = 1)
   data <- data.matrix(frame = data) #holds X, Z, and other potential covariates
   
   #initialize lambda
   if(is.null(Z)) {
-    l <- exp(beta[1] + beta[2] * X)  
+    l <- exp(beta[1] + beta[2] * data[, X])  
   }
   else {
     l <- exp(beta[1] + data[, c(X,Z)] %>% beta[-1]) #dim n x 1
   }
-  #cat("lambda", round(l, 1), "\n")
-
-  #initialize design matrix
-  n <- nrow(data)
-  intercept <- rep(1, times = n)
-  dm <- cbind(intercept, data)
-  #cat("dim dm = ", dim(dm), "\n")
   
-  #initialize weight matrix
-  w <- diag(l)
-  #cat("dim w = ", dim(w))
   
-  #compute and return information
-  t(dm) %*% w %*% dm
+  #save top left 2x2
+  mini_top_left <- sum(l)
+  mini_top_right <- sum(data[, X] * l)
+  mini_bottom_left <- mini_top_right
+  mini_bottom_right <- sum(data[,X]^2 * l)
+  
+  #extend bottom left vector (sum of product of Z and lambda)
+  l_wide <- matrix(data = l, 
+                        nrow = length(l),
+                        ncol = length(Z), 
+                        byrow = FALSE) 
+  #bottom_left <- colSums(data[, Z] * l_wide)
+  bottom_left <- "WRONG"
+  
+  #extend bottom middle vector (sum of product of X, Z, and lambda)
+  xl <- data[,X] * l
+  xl_wide <- matrix(data = xl,
+                    nrow = length(xl),
+                    ncol = length(Z),
+                    byrow = FALSE)
+  bottom_middle <- colSums(data[, Z] * xl_wide)
+  
+  #extend bottom right matrix
+  zzt <- data[, Z] %*% t(data[, Z])
+  bottom_right <- "WRONG"
+  #bottom_right <- colSums(zzt * l_wide)
+  
+  
+  
+  out$mtl <- mini_top_left
+  out$mtr <- mini_top_right
+  out$mbl <- mini_bottom_left
+  out$mbr <- mini_bottom_right
+  
+  out$bl <- bottom_left
+  out$bm <- bottom_middle
+  out$br <- bottom_right
+  
+  out
 }
 ```
+
+Testing the revised Info function
+```{r}
+beta <- c(1, 2, 3)
+x <- runif(100, min = 0, max = 1)
+z <- runif(100, min = 0, max = 1)
+lambda <- exp(beta[1] + beta[2] * x + beta[3] * z)
+y <- rpois(100, lambda)
+
+data <- data.frame(x,z,y)
+info(beta, "x", "z", data)
+
+```
+
+
 
 ```{r}
 #info <- function(beta, X, Z = NULL, data) 
@@ -126,7 +168,11 @@ x <- runif(100, min = 0, max = 1) #generate 100 rows from U(0,1)
 lambda <- exp(beta0 + beta1*x)
 y <- rpois(100, lambda)
 
-my_est <- round(find_beta(start_guess = c(0,0), x = x, y = y, z = NULL, data = data.frame(x,z))$estimates,2) 
+my_est <- round(find_beta(start_guess = c(0,0), 
+                          x = x, 
+                          y = y, 
+                          z = NULL, 
+                          data = data.frame(x,y,z))$estimates,2) 
 
 default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
 

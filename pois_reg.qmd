@@ -53,10 +53,11 @@ U <- function(beta, X, Y, Z = NULL, data) {
   #return score
   score
 }
+```
 
+```{r}
 #Fisher information
 info <- function(beta, X, Z = NULL, data) {
-  out <- list()
   #turn inputs into matrices
   beta <- matrix(data = beta, ncol = 1)
   data <- data.matrix(frame = data) #holds X, Z, and other potential covariates
@@ -64,11 +65,9 @@ info <- function(beta, X, Z = NULL, data) {
   #initialize lambda
   if(is.null(Z)) {
     l <- exp(beta[1] + beta[2] * data[, X])  
+  } else {
+    l <- exp(beta[1] + data[, c(X,Z)] %*% beta[-1]) #dim n x 1
   }
-  else {
-    l <- exp(beta[1] + data[, c(X,Z)] %>% beta[-1]) #dim n x 1
-  }
-  
   
   #save top left 2x2
   mini_top_left <- sum(l)
@@ -76,39 +75,45 @@ info <- function(beta, X, Z = NULL, data) {
   mini_bottom_left <- mini_top_right
   mini_bottom_right <- sum(data[,X]^2 * l)
   
-  #extend bottom left vector (sum of product of Z and lambda)
-  l_wide <- matrix(data = l, 
-                        nrow = length(l),
-                        ncol = length(Z), 
-                        byrow = FALSE) 
-  #bottom_left <- colSums(data[, Z] * l_wide)
-  bottom_left <- "WRONG"
+  #create empty information matrix 
+  i <- matrix(data = 0, 
+             nrow = nrow(beta), 
+             ncol = nrow(beta))
+  i[1, 1] <- mini_top_left
+  i[1, 2] <- i[2, 1] <- mini_bottom_left
+  i[2, 2] <- mini_bottom_right 
   
-  #extend bottom middle vector (sum of product of X, Z, and lambda)
-  xl <- data[,X] * l
-  xl_wide <- matrix(data = xl,
-                    nrow = length(xl),
-                    ncol = length(Z),
-                    byrow = FALSE)
-  bottom_middle <- colSums(data[, Z] * xl_wide)
-  
-  #extend bottom right matrix
-  zzt <- data[, Z] %*% t(data[, Z])
-  bottom_right <- "WRONG"
-  #bottom_right <- colSums(zzt * l_wide)
-  
-  
-  
-  out$mtl <- mini_top_left
-  out$mtr <- mini_top_right
-  out$mbl <- mini_bottom_left
-  out$mbr <- mini_bottom_right
-  
-  out$bl <- bottom_left
-  out$bm <- bottom_middle
-  out$br <- bottom_right
-  
-  out
+  if (!is.null(Z)) {
+    #extend bottom left vector (sum of product of Z and lambda)
+    l_wide <- matrix(data = l, 
+                     nrow = length(l),
+                     ncol = length(Z), 
+                     byrow = FALSE) 
+    bottom_left <- colSums(data[, Z] * l_wide)
+    i[-c(1:2), 1] <- bottom_left
+    i[1, -c(1:2)] <- t(bottom_left)
+    
+    #extend bottom middle vector (sum of product of X, Z, and lambda)
+    xl <- data[,X] * l
+    xl_wide <- matrix(data = xl,
+                      nrow = length(xl),
+                      ncol = length(Z),
+                      byrow = FALSE)
+    bottom_middle <- colSums(data[, Z] * xl_wide)
+    i[-c(1:2), 2] <- bottom_middle
+    i[2, -c(1:2)] <- t(bottom_middle)
+    
+    #extend bottom right matrix
+    zzt <- data[, Z] %*% t(data[, Z])
+    
+    l_wide <- matrix(data = l, 
+                     nrow = length(l),
+                     ncol = ncol(zzt), 
+                     byrow = FALSE) 
+    bottom_right <- colSums(zzt * l_wide)
+    i[-c(1:2), -c(1:2)] <- bottom_right
+  }
+  return(i)
 }
 ```
 
@@ -122,10 +127,7 @@ y <- rpois(100, lambda)
 
 data <- data.frame(x,z,y)
 info(beta, "x", "z", data)
-
 ```
-
-
 
 ```{r}
 #info <- function(beta, X, Z = NULL, data) 
@@ -175,7 +177,6 @@ my_est <- round(find_beta(start_guess = c(0,0),
                           data = data.frame(x,y,z))$estimates,2) 
 
 default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
-
 ```
 
 ```{r}

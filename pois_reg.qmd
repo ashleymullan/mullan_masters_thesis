@@ -7,14 +7,6 @@ format: html
 library(tidyverse)
 ```
 
-TO DO: update information, update find_beta, extend sim
-
-
-U(beta = c(0.5, 0.25, 0.1), 
-  Y = "y", 
-  X = "x", 
-  Z = "z", 
-  data = dat)
 
 ```{r}
 #score function (DOES NOT HANDLE NULL Z APPROPRIATELY)
@@ -104,13 +96,16 @@ info <- function(beta, X, Z = NULL, data) {
     i[2, -c(1:2)] <- t(bottom_middle)
     
     #extend bottom right matrix
-    zzt <- data[, Z] %*% t(data[, Z])
+    #zzt <- data[, Z] %*% t(data[, Z]) #issue in dimensionality
+    zz <- data[,Z] * data[,Z] #temp issue fix
     
-    l_wide <- matrix(data = l, 
-                     nrow = length(l),
-                     ncol = ncol(zzt), 
-                     byrow = FALSE) 
-    bottom_right <- colSums(zzt * l_wide)
+    #l_wide <- matrix(data = l, 
+                     #/nrow = length(l),
+                     #ncol = ncol(zz),
+                     #ncol = ncol(zzt), #same issue
+                     #byrow = FALSE) 
+    #bottom_right <- colSums(zzt * l_wide) #issue in dimensionality
+    bottom_right <- sum(zz * l) #temp issue fix
     i[-c(1:2), -c(1:2)] <- bottom_right
   }
   return(i)
@@ -142,7 +137,7 @@ find_beta <- function(start_guess, x, y, z, data,
   iterations <- 0
   while(diff > maxtol & iterations <= maxiter){
     beta_next <- beta_curr - solve(info(beta_curr, x, z, data)) %*% U(beta_curr, x, y, z, data)
-    diff <- max(abs(beta_next[1] - beta_curr[1]), abs(beta_next[2] - beta_curr[2]))
+    diff <- max(abs(beta_next - beta_curr))
     iterations <- iterations + 1
     beta_curr <- beta_next
     if(verbose) {
@@ -166,17 +161,33 @@ set.seed(1031)
 
 beta0 <- 0.5
 beta1 <- 0.25
+beta2 <- 0.2
 x <- runif(100, min = 0, max = 1) #generate 100 rows from U(0,1)
-lambda <- exp(beta0 + beta1*x)
+z <- runif(100, min = 0.1, max = 1.1) #generate 100 rows from U(0.1,1.1)
+lambda <- exp(beta0 + beta1*x + beta2*z)
 y <- rpois(100, lambda)
 
-my_est <- round(find_beta(start_guess = c(0,0), 
-                          x = x, 
-                          y = y, 
-                          z = NULL, 
+
+my_est <- round(find_beta(start_guess = c(0.1, 0.2, 0.21), 
+                          x = "x", 
+                          y = "y", 
+                          z = "z", 
                           data = data.frame(x,y,z))$estimates,2) 
 
 default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
+```
+```{r}
+  while(diff > maxtol & iterations <= maxiter){
+    beta_next <- beta_curr - solve(info(beta_curr, "x", "z", data)) %*% U(beta_curr, "x", "y", "z", data)
+    diff <- max(abs(beta_next - beta_curr))
+    iterations <- iterations + 1
+    beta_curr <- beta_next
+    if(verbose) {
+      print(paste("beta_next:", beta_next,"\n"))
+      print(paste("diff:", diff, "\n"))
+      print(paste("iterations:", iterations, "\n"))
+    }
+  }
 ```
 
 ```{r}
@@ -216,3 +227,98 @@ sim |> t() |> data.frame() |>
        title = "slope")
 ```
 
+Sim Worksheet Stuff
+```{r}
+error_settings <- c(1,2,3,4,5)
+n_settings <- c("s","m","l")
+
+generate_data <- function(error, n){
+
+  set.seed(1031)
+  X <- rnorm(n,0,1)
+  Z <- rnorm(n,0,1)
+  beta <- c(1,2,3)
+  lambda <- exp(beta[1] + beta[2]*X + beta[3]*Z)
+  Y <- rpois(n, lambda)
+  
+  if(error == 1){
+    Xstar <- X
+  }
+  else{
+    if(error == 2){
+      Xstar <- X + rnorm(0,1)
+    }
+    else{
+      if(error == 3){
+        Xstar <- X + Z + rnorm(0,1)
+      }
+      else{
+        if(error == 4){
+          Xstar <- X * Z + rnorm(0,1)
+        }
+        else{ #error == 5
+          Xstar <- X + rnorm(mean(Z) + 1)  
+        }
+      }
+    }
+  }
+return(list(data = data.frame(Xstar,Y,Z), beta = beta))
+  
+}
+```
+
+```{r}
+error_setting <- rep(0, times = 15)
+n_setting <- rep("", times = 15)
+bh1 <- rep(0, times = 15)
+bh3 <- bh2 <- bh1
+bh1SE <- rep(0, times = 15)
+bh3SE <- bh2E <- bh1SE
+
+results <- data.frame(error_setting, n_setting, 
+                      bh1, bh1SE, 
+                      bh2, bh2SE,
+                      bh3, bh3SE)
+
+for(error in error_settings){
+  for(n in n_settings){
+    df <- generate_data(error,n)
+    
+    guesses <- find_beta(start_guess = c(2,3,4),
+              x = "Xstar",
+              y = "Y",
+              Z = "Z",
+              data = df$data)
+    #guesses$estimates gives the beta hats
+    #how to fill results in the smart way?
+  }
+}
+
+#plot empirical distributions
+results |>
+  ggplot(aes(x = bh1)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1, color = "red")
+
+results |>
+  ggplot(aes(x = bh2)) +
+  geom_histogram() +
+  geom_vline(xintercept = 2, color = "red")
+
+results |>
+  ggplot(aes(x = bh3)) +
+  geom_histogram() +
+  geom_vline(xintercept = 1, color = "red")
+
+#show means of parameter estimates
+mean(results$bh1)
+mean(results$bh2)
+mean(results$bh3)
+
+#show means of SE estimates
+mean(results$bh1SE)
+mean(results$bh2SE)
+mean(results$bh3SE)
+
+
+```

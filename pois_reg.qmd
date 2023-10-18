@@ -108,7 +108,7 @@ info <- function(beta, X, Z = NULL, data) {
     bottom_right <- sum(zz * l) #temp issue fix
     i[-c(1:2), -c(1:2)] <- bottom_right
   }
-  return(i)
+  return(-i)
 }
 ```
 
@@ -128,7 +128,7 @@ info(beta, "x", "z", data)
 #info <- function(beta, X, Z = NULL, data) 
 #U <- function(beta, X, Y, Z = NULL, data) 
 
-find_beta <- function(start_guess, x, y, z, data,
+find_beta <- function(start_guess, x, y, z = NULL, data,
                       maxtol = 0.00001,
                       maxiter = 1000,
                       verbose = FALSE) {
@@ -174,7 +174,7 @@ my_est <- round(find_beta(start_guess = c(0.1, 0.2, 0.21),
                           z = "z", 
                           data = data.frame(x,y,z))$estimates,2) 
 
-default_est <- round(glm(y ~ x, family = "poisson")$coefficients,2)
+default_est <- round(glm(y ~ x + z, family = "poisson")$coefficients,2)
 ```
 ```{r}
   while(diff > maxtol & iterations <= maxiter){
@@ -232,38 +232,18 @@ Sim Worksheet Stuff
 error_settings <- c(1,2,3,4,5)
 n_settings <- c("s","m","l")
 
-generate_data <- function(error, n){
-
-  set.seed(1031)
+set.seed(1031) ## need to move the seed outside of the generate_data() function
+generate_data <- function(n, muU, sigmaU){
   X <- rnorm(n,0,1)
   Z <- rnorm(n,0,1)
   beta <- c(1,2,3)
   lambda <- exp(beta[1] + beta[2]*X + beta[3]*Z)
   Y <- rpois(n, lambda)
   
-  if(error == 1){
-    Xstar <- X
-  }
-  else{
-    if(error == 2){
-      Xstar <- X + rnorm(0,1)
-    }
-    else{
-      if(error == 3){
-        Xstar <- X + Z + rnorm(0,1)
-      }
-      else{
-        if(error == 4){
-          Xstar <- X * Z + rnorm(0,1)
-        }
-        else{ #error == 5
-          Xstar <- X + rnorm(mean(Z) + 1)  
-        }
-      }
-    }
-  }
-return(list(data = data.frame(Xstar,Y,Z), beta = beta))
-  
+  # Generate random errors
+  U <- rnorm(n, muU, sigmaU)
+  Xstar <- X + U
+  return(data.frame(X, Xstar,Y,Z))
 }
 ```
 
@@ -275,23 +255,32 @@ bh3 <- bh2 <- bh1
 bh1SE <- rep(0, times = 15)
 bh3SE <- bh2E <- bh1SE
 
-results <- data.frame(error_setting, n_setting, 
-                      bh1, bh1SE, 
-                      bh2, bh2SE,
-                      bh3, bh3SE)
+# Consider using expand.grid() to make this without having to make the vectors first
+num_sims <- 5
+results <- expand.grid(sim_id = 1:num_sims,
+                       n = c(100, 1000, 10000), 
+                       muU = c(0, 0.5, 1), 
+                       sigmaU = 0.5, 
+                       betahat0 = NA, betahat1 = NA, betahat2 = NA, 
+                       se_betahat0 = NA, se_betahat1 = NA, se_betahat2 = NA,
+                       converged = NA
+                       )
 
-for(error in error_settings){
-  for(n in n_settings){
-    df <- generate_data(error,n)
+# Set seed before looping
+set.seed(1031)
+for (i in 1:nrow(results)) {
+  df <- generate_data(n = results$n[i], 
+                      muU = results$muU[i], 
+                      sigmaU = results$sigmaU[i])
     
-    guesses <- find_beta(start_guess = c(2,3,4),
-              x = "Xstar",
-              y = "Y",
-              Z = "Z",
-              data = df$data)
-    #guesses$estimates gives the beta hats
-    #how to fill results in the smart way?
-  }
+  guesses <- find_beta(start_guess = c(2,3,4),
+            x = "Xstar",
+            y = "Y",
+            Z = "Z",
+            data = df)
+
+  results[i, c("betahat0", "betahat1", "betahat2")] <- guesses
+  # Must do the same for standard errors and convergence indicator
 }
 
 #plot empirical distributions
@@ -319,6 +308,4 @@ mean(results$bh3)
 mean(results$bh1SE)
 mean(results$bh2SE)
 mean(results$bh3SE)
-
-
 ```

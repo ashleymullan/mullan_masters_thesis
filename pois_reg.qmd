@@ -176,19 +176,7 @@ my_est <- round(find_beta(start_guess = c(0.1, 0.2, 0.21),
 
 default_est <- round(glm(y ~ x + z, family = "poisson")$coefficients,2)
 ```
-```{r}
-  while(diff > maxtol & iterations <= maxiter){
-    beta_next <- beta_curr - solve(info(beta_curr, "x", "z", data)) %*% U(beta_curr, "x", "y", "z", data)
-    diff <- max(abs(beta_next - beta_curr))
-    iterations <- iterations + 1
-    beta_curr <- beta_next
-    if(verbose) {
-      print(paste("beta_next:", beta_next,"\n"))
-      print(paste("diff:", diff, "\n"))
-      print(paste("iterations:", iterations, "\n"))
-    }
-  }
-```
+
 
 ```{r}
 set.seed(1031)
@@ -229,10 +217,11 @@ sim |> t() |> data.frame() |>
 
 Sim Worksheet Stuff
 ```{r}
-error_settings <- c(1,2,3,4,5)
+error_settings <- c(1,2,3)
 n_settings <- c("s","m","l")
 
 set.seed(1031) ## need to move the seed outside of the generate_data() function
+
 generate_data <- function(n, muU, sigmaU){
   X <- rnorm(n,0,1)
   Z <- rnorm(n,0,1)
@@ -248,13 +237,6 @@ generate_data <- function(n, muU, sigmaU){
 ```
 
 ```{r}
-error_setting <- rep(0, times = 15)
-n_setting <- rep("", times = 15)
-bh1 <- rep(0, times = 15)
-bh3 <- bh2 <- bh1
-bh1SE <- rep(0, times = 15)
-bh3SE <- bh2E <- bh1SE
-
 # Consider using expand.grid() to make this without having to make the vectors first
 num_sims <- 5
 results <- expand.grid(sim_id = 1:num_sims,
@@ -276,36 +258,41 @@ for (i in 1:nrow(results)) {
   guesses <- find_beta(start_guess = c(2,3,4),
             x = "Xstar",
             y = "Y",
-            Z = "Z",
+            z = "Z",
             data = df)
 
-  results[i, c("betahat0", "betahat1", "betahat2")] <- guesses
-  # Must do the same for standard errors and convergence indicator
+  results[i, c("betahat0", "betahat1", "betahat2")] <- guesses$estimates
+  results[i, c("converged")] <- guesses$convergence
+  # Must do the same for standard errors 
 }
 
 #plot empirical distributions
 results |>
-  ggplot(aes(x = bh1)) +
+  ggplot(aes(x = betahat1)) +
   geom_histogram() +
-  geom_vline(xintercept = 1, color = "red")
+  geom_vline(xintercept = 2, color = "red") +
+  labs(title = "Empirical Mean: 1.56",
+       subtitle = "Truth: 2")
 
 results |>
-  ggplot(aes(x = bh2)) +
+  ggplot(aes(x = betahat1, group = n)) +
   geom_histogram() +
-  geom_vline(xintercept = 2, color = "red")
+  geom_vline(xintercept = 2, color = "red") +
+  facet_wrap(~n) +
+  labs(title = "Varying the sample size doesn't fix it.")
 
 results |>
-  ggplot(aes(x = bh3)) +
+  ggplot(aes(x = betahat1, group = muU)) +
   geom_histogram() +
-  geom_vline(xintercept = 1, color = "red")
+  geom_vline(xintercept = 2, color = "red") +
+  facet_wrap(~muU) +
+  labs(title = "Messing with the error level doesn't fix it.")
+
 
 #show means of parameter estimates
-mean(results$bh1)
-mean(results$bh2)
-mean(results$bh3)
+mean(results$betahat1)
 
 #show means of SE estimates
-mean(results$bh1SE)
-mean(results$bh2SE)
-mean(results$bh3SE)
+mean(results$se_betahat1)
+
 ```

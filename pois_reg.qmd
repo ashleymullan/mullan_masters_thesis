@@ -5,6 +5,8 @@ format: html
 
 ```{r}
 library(tidyverse)
+library(ggbreak)
+library(latex2exp)
 ```
 
 
@@ -150,7 +152,9 @@ find_beta <- function(start_guess, x, y, z = NULL, data,
     conv_msg = "We hit the maximum number of iterations but did not converge."
   }
   else { conv_msg = "We have achieved convergence!"}
+  errors <- diag(solve(info(beta_curr, x, z, data)))
   return(list(estimates = beta_curr,
+              se = errors,
               convergence = conv_msg))
 }
 ```
@@ -178,6 +182,7 @@ default_est <- round(glm(y ~ x + z, family = "poisson")$coefficients,2)
 ```
 
 
+FIRST TRY AT RUNNING SIMS: IGNORE ME
 ```{r}
 set.seed(1031)
 sim <- NULL
@@ -215,13 +220,8 @@ sim |> t() |> data.frame() |>
        title = "slope")
 ```
 
-Sim Worksheet Stuff
+Sim Worksheet Stuff - Much Improved :)
 ```{r}
-error_settings <- c(1,2,3)
-n_settings <- c("s","m","l")
-
-set.seed(1031) ## need to move the seed outside of the generate_data() function
-
 generate_data <- function(n, muU, sigmaU){
   X <- rnorm(n,0,1)
   Z <- rnorm(n,0,1)
@@ -238,11 +238,12 @@ generate_data <- function(n, muU, sigmaU){
 
 ```{r}
 # Consider using expand.grid() to make this without having to make the vectors first
-num_sims <- 5
+num_sims <- 10
 results <- expand.grid(sim_id = 1:num_sims,
-                       n = c(100, 1000, 10000), 
-                       muU = c(0, 0.5, 1), 
+                       n = c(100, 1000, 10000), #medium, large, larger sample size
+                       muU = c(0, 0.5, 1), #small, medium, large error
                        sigmaU = 0.5, 
+                       missingness = c(0, 0.25, 0.50, 0.75), #naive, three levels of complete
                        betahat0 = NA, betahat1 = NA, betahat2 = NA, 
                        se_betahat0 = NA, se_betahat1 = NA, se_betahat2 = NA,
                        converged = NA
@@ -253,46 +254,58 @@ set.seed(1031)
 for (i in 1:nrow(results)) {
   df <- generate_data(n = results$n[i], 
                       muU = results$muU[i], 
-                      sigmaU = results$sigmaU[i])
-    
-  guesses <- find_beta(start_guess = c(2,3,4),
-            x = "Xstar",
-            y = "Y",
-            z = "Z",
-            data = df)
+                      sigmaU = results$sigmaU[i]) #initialize simulated data
+  df <- df |>
+    mutate(id = 1:nrow(df)) #assign row ID to simulated data
+  
+  kept_ids <- sample(df$id, 
+                     size = (1 - results$missingness[i]) * nrow(df),
+                     replace = FALSE)
+  
+  df <- df |>
+    filter(id %in% kept_ids) #only save appropriate subset
+  
+  
+  guesses <- find_beta(start_guess = c(2,3,4), 
+                       x = "Xstar", 
+                       y = "Y", 
+                       z = "Z", 
+                       data = df)
+  
 
   results[i, c("betahat0", "betahat1", "betahat2")] <- guesses$estimates
   results[i, c("converged")] <- guesses$convergence
-  # Must do the same for standard errors 
+  results[i, c("se_betahat0", "se_betahat1", "se_betahat2")] <- guesses$se 
 }
+```
 
+```{r}
+results |>
+  group_by(n, muU, missingness) |>
+  summarize(avg_coef = mean(betahat1),
+            avg_se = mean(se_betahat1))
+```
+
+
+```{r}
 #plot empirical distributions
 results |>
-  ggplot(aes(x = betahat1)) +
-  geom_histogram() +
-  geom_vline(xintercept = 2, color = "red") +
-  labs(title = "Empirical Mean: 1.56",
-       subtitle = "Truth: 2")
+  filter(muU == 0.5) |> #fix muU to the middle level
+  ggplot(aes(x = as.factor(n), y = betahat1)) +
+  geom_boxplot(aes(fill = as.factor(missingness))) +
+  theme_minimal() +
+  scale_x_discrete(labels = c('100','1,000','10,000')) +
+  theme(axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank()) +
+  geom_hline(yintercept = 2, color = "gray", linetype = "dashed") +
+  scale_fill_manual(values = c("#a849c1", "#49ad2f", "#df5c06", "#8b7748"),
+                    labels = c("None", "25%", "50%", "75%")) +
+  labs(y = TeX("$\\hat{\\beta_1}$"),
+       fill = "Missingness",
+       x = "(Original) Sample Size",
+       title = "As sample size increases, the bias doesn't disappear.",
+       subtitle = "Fix U ~ N(0.5, 0.5)")
 
-results |>
-  ggplot(aes(x = betahat1, group = n)) +
-  geom_histogram() +
-  geom_vline(xintercept = 2, color = "red") +
-  facet_wrap(~n) +
-  labs(title = "Varying the sample size doesn't fix it.")
-
-results |>
-  ggplot(aes(x = betahat1, group = muU)) +
-  geom_histogram() +
-  geom_vline(xintercept = 2, color = "red") +
-  facet_wrap(~muU) +
-  labs(title = "Messing with the error level doesn't fix it.")
-
-
-#show means of parameter estimates
-mean(results$betahat1)
-
-#show means of SE estimates
-mean(results$se_betahat1)
-
+```
 ```

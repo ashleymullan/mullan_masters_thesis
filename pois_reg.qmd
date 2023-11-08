@@ -9,7 +9,6 @@ library(ggbreak)
 library(latex2exp)
 ```
 
-
 ```{r}
 #score function (DOES NOT HANDLE NULL Z APPROPRIATELY)
 U <- function(beta, X, Y, Z = NULL, data) {
@@ -183,7 +182,7 @@ default_est <- round(glm(y ~ x + z, family = "poisson")$coefficients,2)
 
 
 FIRST TRY AT RUNNING SIMS: IGNORE ME
-```{r}
+```{r, eval = F}
 set.seed(1031)
 sim <- NULL
 simplecase <- TRUE
@@ -307,5 +306,4 @@ results |>
        title = "As sample size increases, the bias doesn't disappear.",
        subtitle = "Fix U ~ N(0.5, 0.5)")
 
-```
 ```

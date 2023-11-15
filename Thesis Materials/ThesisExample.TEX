@@ -1,0 +1,230 @@
+\documentclass[MS, xcolor=dvipsnames]{wfuthesis} % MA or MS with in []
+
+
+\usepackage{amsfonts,amssymb,latexsym}
+\usepackage{amsthm}  % used to make "proof" work
+\usepackage{graphicx}
+
+\begin{document}
+
+\newcommand{\dis}{\displaystyle}
+\newcommand{\lt}{\left}
+\newcommand{\rt}{\right}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\cal}{\mathcal}
+\newtheorem{thm1}{Theorem}[chapter]
+\newtheorem{lem}{Lemma}
+\newtheorem{thm}[thm1]{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{cor}{Corollary}
+\newcommand{\doublespace}{\addtolength{\baselineskip}{0.6\baselineskip}}
+\newcommand{\singlespace}{\addtolength{\baselineskip}{-0.34\baselineskip}}
+
+\title{Your Title}
+\author{Your Name Here}
+\department{Department of Statistical Sciences}
+
+\advisor{Your Advisor, Ph.D.}
+\chairperson{Committee Chair, Ph.D.}
+\member{Committee member, Ph.D.}    % Should be in Alphabetical Order
+\member{Committee member, Ph.D.}
+\date{Date goes here}
+\maketitle
+
+\clearpage
+%\pagenumbering{roman}  %with this line in TOC is page i, with this line out TOC is page ii
+
+
+\acknowledgments  %is to come before table of contents
+
+There are many people who helped to make this thesis possible. ......
+
+\tableofcontents
+
+\abstract
+
+\noindent Your Name
+
+\vspace{3mm}
+
+\noindent Your abstract text goes here
+
+\vspace{3mm}
+\noindent 2nd Paragraph can go here if needed
+
+\vspace{3mm}
+\noindent and a 3rd
+
+
+
+
+
+\chapters
+
+\chapter{Introduction}  %
+\pagenumbering{arabic}
+
+This is sample text from an actual Thesis:
+
+As images pass through the earth's atmosphere they become distorted.  In some cases so much so that the image has no similarities to it's "actual" form.  The wave front relinquishes it's form for a variety of reasons.  Some of which include humidity, air temperature and general atmospheric turbulence \cite{Tyson}.  By definition adaptive optics is the scientific and engineering discipline which deals with the control of light in some form of an adaptive looping process \cite{Tyson}.  Even though no single person may be accredited as the founder of adaptive optics there have been vast advancements made in the past 50 years.  The basic process behind adaptive optics is to obtain a sample of the gradient of the incoming wavefront which may be accomplished through the use of a Shack-Hartmann wave front sensor when a point source is available.  Perhaps the most common method for correcting atmospheric aberrations is by phase conjugation.  This method is the focal point in adaptive optics.  Next, the obtained data is used to correct the wave front.
+
+When any wave front passes through some aberrator it is modified.  Once the distorted wave front bounces off of a conventional uncorrected mirror it again passes through the aberrator and the distortion in the wave front is now doubled as seen in Figure 1 located in the Appendix.  The magnititudes of the bumps in the final distorted wave front directly determine the mirror correction necessary in order to retrieve the original wavefront.  Multiplication of every distortion by - 1/2 determines the amount of correction needed over each particular mirror segment at the position in which the wavefront reflects off of the mirror segment.  This is a very tricky process since most aberrations are constantly changing and therefore the correction for them must be a continuous process and must repeatedly occur in order to achieve accurate results.  Correction is accomplished by quickly positioning the deformable mirror to correct the wavefront.  The detection, estimation and correction process should not take longer than one one-hunderdth of a second \cite{Tyson}.  Since the goal is to obtain real time data.  The final images may be further enhanced by post-processing methods, but that topic will not be discussed in this paper.
+
+[remainder of chapter deleted]
+
+\chapter{Name of chapter 2}
+
+In the mid 1960's, the Fast Fourier Transform, or FFT, was born.  By 1977, various methods of FFT's were implemented in a wide variety of applications.  It is still considered to be one of greatest advancements in Numerical Analysis.  FFT algorithms were developed as a "quick" method for computing the Discrete Fourier Transform.  The Discrete Fourier Transform, or DFT, is the result obtained by discretizing the Fourier Series.  It is important to remember that the function in consideration must have periodicity, a finite number of maxima and minima during any period, a finite number of discontinuities if there are any at all, and it must be absolutely integrable in any period in order to have a fourier series representation \cite{Ramirez}.  Any algorithm whose computational efficiency is on the order of N $log_{2}$N is generally considered an FFT method.  This implies that solutions to the inverse Discrete Fourier Transforms are also considered FFTs.
+
+There are many types of FFT algorithms, but they fall into one of two general categories.  The decimation in time approach and the decimation in frequency approach.  The decimation in time approach breaks apart the time dependent input vector x in order to approximate the solution.  The decimation in frequency approach breaks apart the frequency dependent vector y in its computation.
+
+In order to use the so-called Radix-2 FFT, the matrix in question must be n $\times$ n where $n = 2^{i}$  $\exists$ i $\geq$ 1.  The general Radix algorithm requires the n $\times$ n matrix to be highly composite (i.e. having many small factors).  There are also algorithms for computing FFTs of non-square matrices.  However, the Radix-2 algorithms allow for faster execution than the more general ones.  It is possible to modify a matrix whose dimension is not a power of two by padding it with zeros to obtain a square n $\times$ n matrix where n is some power of two.
+
+ Let the vector $y = \pmatrix{y_{0}\cr
+                            y_{1}\cr
+                            \vdots \cr
+                            y_{n-1}\cr}$  be the Discrete Fourier Transform of $x =   \pmatrix{x_{0}\cr x_{1}\cr \vdots \cr  x_{n-1}\cr}.$
+
+\noindent Each $y_{k} = \sum_{j=0}^{n-1}[cos (2 \pi kj/n) - i sin (2 \pi kj/n)] x_{j} = \sum_{j=0}^{n-1}e^{-2 \pi kji/n} x_{j}$ for k = 0, 1, ...,n-1. There are several variations on computing the Radix-2 FFT.  One is the omition of the $\frac{\rm 1}{\rm n}$ term for each $y_{k}$.  Another is to omit the negative sign from the power of the exponential function.  The DFT of y may also be seen as the product of a matrix and a vector where y = $F_{n}$x and $F_{n}$ is an n $\times$ n matrix with rows indexed by k and columns indexed by j.  Each entry in $F_{n}$ is denoted by f(k,j) and is equal to $e^{-2\pi kji/n}$.  In order to reduce the number of flops the convention of dropping the 1/n term will be applied in the formulation of the DFT.
+
+Sample Matlab code to set up the Discrete Fourier Transform matrix given by \cite{Van Loan}:
+
+\noindent for k  =  0:n-1
+
+    m  =  $e^{-2 \pi /n}$
+
+    F(k,0)  = 1
+
+    for j  = 1:n-1
+
+       F(k,j) = mF(k,j-1)
+
+       end
+
+\noindent end
+
+The efficiency of an algorithms is commonly measured in flops which are floating point operations.  There are two flops for complex addition and six flops for complex multiplication.  The total number of flops for the above code is given by O($6n^2$) flops.
+
+Assuming the vector x still has length n. Define
+
+\begin{eqnarray}
+\omega_{m} = diag(1,e^{-2\pi/n},(e^{-2\pi/n})^2,...,(e^{-2\pi/n})^(m-1))
+\end{eqnarray}
+\noindent where m is initially $\frac{\rm n}{\rm 2}$ and diag refers to an m $\times$ m matrix with the entries listed going down the diagonal.  Define $EOPerm_{n}$ to be an n $\times$ n matrix using sequential even and odd format respectively and beginning with 0 as the first element in the even list.  One of the interesting properties of $EOPerm_{n}$ is that the transpose of this matrix is its inverse such that $EOPerm_{n} EOPerm_{n}^{T} = I_{n} $.
+
+\noindent Applying $EOPerm_{n}$ to $F_{n}$ on the right will yield a matrix of the form
+
+ $$ F_{n}EOPerm_{n} =  \pmatrix {F_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}F_{\frac{\rm n}{\rm 2}}\cr F_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}F_{\frac{\rm n}{\rm 2}}\cr}  =  \pmatrix  {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}} &0\cr F_{\frac{\rm n}{\rm 2}} &0\cr} $$
+
+
+\noindent Since $EOPerm_{n}^{-1}=EOPerm_{n}^T$ then   multiplying both sides by $EOPerm_{n})^{T}$ on the right yields:
+
+$$F_{n}EOPerm_{n}EOPerm_{n}^{T} =  \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}} &0\cr F_{\frac{\rm n}{\rm 2}} &0\cr} EOPerm_{n}^{T} $$
+
+$$F_{n}I_{n} = F_{n} =  \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}} &0\cr F_{\frac{\rm n}{\rm 2}} &0\cr} (EOPerm_{n})^{T}$$
+
+\noindent Multiplying both sides by the vector x on the right gives:
+
+$$F_{n}x = \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}} &0\cr F_{\frac{\rm n}{\rm 2}} &0\cr}x (EOPerm_{n})^{T}$$
+
+$$F_{n}x = \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}} &0\cr F_{\frac{\rm n}{\rm 2}} &0\cr} \pmatrix {x(0:2:n-2) \cr x(1:2:n-1)\cr}$$
+
+$$ y = F_{n}x = \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {F_{\frac{\rm n}{\rm 2}}x(0:2:n-2)\cr F_{\frac{\rm n}{\rm 2}}x(1:2:n-1)\cr}$$
+
+Repeating these steps for C = $\frac{\rm n}{\rm 2} F_{C}x(0:2:n-2)$ and $F_{C}x(1:2:n-1)$ follows similarly.  This process can be repeated until c = 1 when n is some power of two.
+
+Since the Fast Fourier Transform is a "quick" solution to the DFT, then the number of flops used to compute y should be much less than an n $\times$ n matrix * n vector, which would be $8n^{2}$ flops for complex numbers.
+
+The FFT method utilizes the special structure of the DFT matrix.  The basic concept of an FFT involves systematically working backwards.  Assuming our original modified matrix is n = $2^{t}$ there are t + 1 computation levels and our current computational level is s which is initially s = 0 working backwards.  The initial step realizes that $F_{1}x_{j} = x_{j}$ and $F_{1}x_{k} = x_{k}$ since $F_{1}$ = 1.  Given two DFT matrices that are to be combined are a and b each with length $\frac{\rm n}{\rm 2}$ then
+
+\begin{eqnarray}
+a & = & F_\frac{\rm c}{\rm 2} x(k:\frac{\rm n}{\rm 2^{s-1}} :n-1) \\
+b & = & F_\frac{\rm c}{\rm 2}x(k + \frac{\rm n}{\rm 2^{s-1}}:\frac{\rm n}{\rm 2^{s-1}} :n-1)
+\end{eqnarray}
+
+\noindent Using the original vector x, start at the $k^{th}$ position and include every $\frac{\rm n}{\rm 2^{s-1}}$ entry until reaching the n-1 entry when forming the vector a and likewise for b.   Also the $\omega_\frac{\rm c}{\rm 2}$ matrix defined earlier is needed, where n = $2^{s}$.  Define $\zeta = \omega_\frac{\rm c}{\rm 2}$ b then we may obtain
+
+\begin{eqnarray}
+F_{c}x(k:\frac{\rm n}{\rm 2^{s}}:n-1) =  \pmatrix {I_{\frac{\rm n}{\rm 2}} &\omega_{\frac{\rm n}{\rm 2}}\cr I_{\frac{\rm n}{\rm 2}} &-\omega_{\frac{\rm n}{\rm 2}}\cr} \pmatrix {a \cr b\cr} = \pmatrix {a + \zeta \cr a - \zeta \cr }
+\end{eqnarray}
+
+[remainder of chapter deleted]
+
+
+\chapter{Chapter 3}
+
+Chapter text goes here
+
+
+\begin{thm}  Matrix B has a decomposition given by $B = \Theta E \lambda_{B} E^{-1} \Theta$ where E, $E^{-1}$, $\Theta$ and $\lambda_{B}$ are N X N matrices containing real values.
+\end{thm}
+
+\begin{proof}
+text of your proof....................text of your proof....................
+text of your proof....................
+text of your proof....................
+text of your proof....................
+text of your proof....................
+text of your proof....................
+text of your proof....................
+text of your proof.................... \end{proof} 
+
+\begin{cor}  If there is a Corollary to the Theorem
+\end{cor}
+
+
+\begin{definition}
+
+text for definition goes here
+
+\end{definition}
+
+\chapter{Chapter 4}
+
+Text goes here
+
+
+
+\begin{thebibliography}{99}
+
+%these items are provided as samples
+
+\bibitem{Angel} Angel, E. and R. Bellman \underline{Dynamic Programming and Partial Differential Equations}.  Academic Press, New York, 1972.
+\bibitem{Demmel} Demmel, James W. \underline{Applied Numerical Linear Algebra}. Society for Industrial and Applied Mathematics, Philadelphia, Pennsylvania, 1997.
+\bibitem{Golub} Golub, Gene H. and James M. Ortega \underline{Scientific Computing and Differential Equations}.  Academic Press, San Diego, California, 1992.
+\bibitem{Milman} Milman, Mark and Amir Fijany
+\bibitem{Ramirez} Ramirez, Robert W. \underline{The FFT, Fundamentals and Concepts}. Prentice Hall Inc. , Englewood Cliffs, New Jersey, 1985.
+\bibitem{Strauss} Walter A. \underline{Partial Differential Equations, An Introduction}.  John Wiley and Sons Inc. , New York. 1992.
+\bibitem{Tyson} Tyson, Robert K. \underline{Principles of Adaptive Optics, Second Edition}. Academic Press, San Diego, California, 1991.
+\bibitem{Van Loan}  Van Loan, Charles \underline{Computational Frameworks for the Fast Fourier Transform}. Society for Industrial and Applied Mathematics, Philadelphia, Pennsylvania, 1992.
+\bibitem{Walker}  Walker, James S. \underline{Fast Fourier Transform, Second Edition}. CRC Press Inc. , Boca Raton, Florida, 1996.
+
+\end{thebibliography}
+
+
+\appendix
+\chapter{A Title Goes Here}
+
+Text for the 1st Appendix
+
+\begin{figure}[htb]
+\begin{center}
+\leavevmode
+\includegraphics[width=0.75\textwidth]{picture.jpg}
+\end{center}
+\caption{Awesome Image}
+\label{fig:awesome_image}
+\end{figure}
+
+
+
+\includegraphics[width=0.5\textwidth]{picture.jpg}
+
+\chapter{Title for 2nd Appendix}
+
+
+\vita
+
+info goes here if needed
+
+\end{document} 

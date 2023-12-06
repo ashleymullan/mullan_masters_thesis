@@ -1,0 +1,287 @@
+---
+title: "Adjusting for measurement error to quantify the relationship between diabetes and local access to healthy food"
+author: "Ashley E. Mullan"
+format: 
+  revealjs:
+    self-contained: true
+    theme: sky
+    auto-stretch: false
+    footer: "STA791: Fall 2023"
+    slide-number: true
+include-in-header:
+  - text: |
+      <style>
+      #title-slide .title {
+        font-size: 1.5em;
+        font-family: Quicksand
+      }
+      </style>
+---
+
+## Diabetes in Forsyth County {.center}
+
+
+
+| Health Outcome       | Mean   | Standard Error |
+|----------------------|---------|----------|
+| Diabetes Prevalence  | 11.2%   | 3.3%     |
+| Lower Estimate       | 10.5%   | 3.2%     |
+| Upper Estimate       | 11.9%   | 3.5%     |
+
+<br>
+
+| County Demographic   | Mean | Standard Error |
+|----------------------|--------|---------|
+| Population           | 4242   | 1581    |
+
+
+::: {.notes}
+N = 340, study area is Forsyth and bordering counties but study unit is a census tract, most granular available diabetes data
+
+up next: healthy eating equals healthy living
+:::
+
+
+
+## Healthy Eating ➡️ Healthy Living {.center}
+  - A healthy diet increases the likelihood of good overall
+health and **decreases risk of preventable illness** (World Health Organization, 2019). 
+  - Maintaining a healthy diet requires **consistent access to healthy food**, which may be hindered by geography or income.
+  - Review studies found **high prevalence of diabetes** in food-insecure households (Gucciardi et al., 2014).
+
+  
+::: {.notes}
+up next: food access indicators
+:::
+
+## Choosing a Food Access Measure {.center}
+1. Count the number of healthy food retailers in a given radius (i.e., **density**)
+2. Compute the distance to the nearest healthy food retailer (i.e., **proximity**)
+3. Create an **indicator** of low food access that evaluates to $1$ if zero healthy food retailers exist within a given distance
+
+::: {.notes}
+we compute from the centroid of a census tract
+don't forget to mention the USDA as the source of our indicator and how they make multiple based on diff dists and rural
+up next: all of these require distance computations
+:::
+
+## Distance Computations {.scrollable }
+:::: {.columns}
+
+::: {.column width="70%"}
+
+  - The **Haversine distance** is a trigonometric function of latitude and longitude.
+  - It ignores physical obstacles, so it **underestimates** the true distance between two points and is considered **error-prone**.
+  - The Haversine distance in the image is **impassable**, as it crosses a pond.
+
+:::
+
+::: {.column width="30%"}
+
+![](straight_reynolda.png){width="75%"}
+:::
+
+::::
+
+## Distance Computations 
+:::: {.columns}
+
+::: {.column width="70%"}
+
+  - The **route-based distance** works around obstacles.
+  - It is **more accurate** than the Haversine distance but is **computationally expensive**.
+
+::: {style="font-size: 80%;"}
+| Distance    | Mean   | SE |
+|-------------|---------|----------|
+| Haversine   | 1.808   | 1.853    |
+| Route-Based | 2.572   | 2.406    |
+| Difference  | 0.764   | 0.700    |
+:::
+
+:::
+
+::: {.column width="30%"}
+
+![](route_reynolda.png){width="75%"}
+
+:::
+
+::::
+
+::: {.notes}
+two phase design
+:::
+
+## Guiding Questions {.center}
+
+1. Can we use a function of distance to healthy food retailers to **quantify food access** in Forsyth County, North Carolina, even if this function is **subject to misclassification**?
+
+2. Can we estimate the relationship between **low food access** and **diabetes** prevalence?
+
+::: {.notes}
+up next: two phase design to tackle these questions
+:::
+
+## Two Phase Design {.scrollable .smaller}
+  - Having some correct route-based distances is better than none.
+  - Error-prone Haversine distances are available for all $N$ neighborhoods, and we can use them to create our indicator of low food access $X^*$ that is subject to misclassification.
+  - In addition to $X^*$, we **query** route-based distances $X$ for $n$ neighborhoods, where $n < N$.
+
+::: {.center}
+
+![](two_phase.png){width="55%" fig-align="center"}
+
+:::
+
+::: {.notes}
+existing methods coming up
+:::
+
+## Existing Methods
+  - Functions of **sensitivity** and **specificity**
+can be used to estimate prevalence of an imperfectly classified outcome (Speybroeck et al., 2013).
+
+  - Binary variables may be created from continuous ones with non-differential error, but the new variables may still have **differential error** (Flegal et al., 1991). 
+  
+  - Validation data can be used to build a model for $X$ and use it for **multiple imputation** (Cole et al., 2006).
+
+::: {.notes}
+non-differential is independent of outcome
+advantage of MLE over imputation is that it's computationally simpler and has easier standard errors to grab
+our partially queried dataset is a validation study
+:::
+
+## Existing Methods
+
+  - **Naive regression models**, where error-prone $X^∗$ is used
+in the place of $X$ will have regression coefficients that are biased by a function of the sensitivity and specificity (Shaw et al., 2020). 
+
+  - We follow Tang et al., and others by considering a maximum likelihood estimator (**MLE**) that incorporates **both queried and unqueried** observations.
+  
+## Simulation Roadmap {.center}
+We compare the **<span style="color:#E5B80B;"> gold standard approach </span>** to the following approaches:
+
+1. Naive Analysis (replace $X$ with $X^*$)
+2. Complete Case Analysis (only use rows that have $X$)
+
+The coefficient we are looking to estimate has true value $\beta_1 = 2$ throughout the simulation study.
+
+## Naive Analysis Simulations
+
+![](varying_error_results.png){width="80%" fig-align="center"}
+
+## Complete Case Simulations
+![](varying_missingness_results.png){width="80%" fig-align="center"}
+
+## Simulation Summary {.center}
+
+  - The naive approach is **biased** when compared to the gold standard.
+  - The complete-case approach is **unbiased** but has a higher variance than the gold standard and is **inefficient**.
+  - We want to our estimator be **unbiased** and **efficient**.
+
+
+## Notation {.center}
+
+  - $X$ is an error-free binary explanatory variable
+  - $X^*$ is an error-prone version of $X$
+  - $\boldsymbol{Z}$ is an error-free covariate vector
+  - $Y$ is an outcome (diabetes prevalence in a neighborhood)
+  
+  We are interested in finding the coefficient vector $\boldsymbol{\beta}$ from the Poisson model of $Y \mid X, \boldsymbol Z$.
+  
+## Building the Log-Likelihood {.center}
+
+The log-likelihood function is constructed based on the available data, and we build up from the ideal to reality through the following three cases.
+
+  1. Accurate and Not Missing 🤩
+  2. Not Accurate but Not Missing 🤨
+  3. Not Accurate and Missing 🤔
+
+## Simple Case (🤩)
+  - All observations take the form $(X,Y,\boldsymbol{Z})$.
+  - Our Poisson model of interest comes from breaking up the joint probability of an observation.
+  
+  $$P(Y,X,\boldsymbol{Z}) = P_\boldsymbol{\beta}(Y \mid X, \boldsymbol{Z})P(X \mid \boldsymbol{Z})P(Z)$$
+  
+  - We end up maximizing: $\sum\limits_{i = 1}^{N}\log\{P_{\boldsymbol{\beta}}(Y_i \mid X_i, \boldsymbol{Z}_i)\}$
+  
+  
+## The Useless Case (🤨)
+  - All observations take the form $(X, X^*, Y, \boldsymbol{Z})$.
+  - Again, break up the joint probability and simplify.
+  
+  $$P_{\boldsymbol{\beta}}(Y,X,\boldsymbol{Z}, X^*) \propto P_{\boldsymbol{\beta}}(Y \mid X, \boldsymbol{Z})P(X \mid X^*, \boldsymbol{Z}).$$
+  
+  - We don't care about this case, as it is **not necessary** to use $X^*$ if we have fully observed $X$, and we end up maximizing the same function as the ideal case.
+
+## Our Case (🤔) {.center}
+  - We have employed **two-phase design** to ensure that $n$ observations take the form $(X, X^*, Y, \boldsymbol{Z})$ and $N-n$ observations take the form $(X^*, Y, \boldsymbol{Z})$.
+  - Using **surrogacy**, the conditional independence of $X^*$ and $Y$ given $X$, we can set up the outcome model and the error model, parameterized by $\boldsymbol{\beta}$ and $\boldsymbol{\eta}$ respectively.
+  
+## Our Case (🤔)
+
+We first handle the $n$ queried observations.
+
+  $P(Y,X,\boldsymbol{Z}, X^*)$
+  
+  $\phantom{PPPPP} = P_{\boldsymbol{\beta}}(Y \mid X, X^*, \boldsymbol{Z})P_{\boldsymbol{\eta}}(X \mid X^*, \boldsymbol{Z})P(X^*, \boldsymbol{Z})$
+  $\phantom{PPPPP} = P_{\boldsymbol{\beta}}(Y \mid X, \boldsymbol{Z})P_{\boldsymbol{\eta}}(X \mid X^*, \boldsymbol{Z})P(X^*, \boldsymbol{Z})$
+  
+We now handle the other $N-n$ observations by **marginalizing** over $X$.
+  
+  $$P(Y,X^*,\boldsymbol{Z}) = \sum\limits_{x=0}^{1}P(Y,X=x,\boldsymbol{Z}, X^*)$$
+  
+## Our Final Log Likelihood {.smaller .center}
+
+  - In the full log likelihood, **each observation's contribution is additive**, so we can now use all $N$ observations along with $Q_i$, an indicator for the query status of observation $i$.
+
+  - We are ready to maximize the equation below using numerical methods in $R$ to solve for $\hat{\boldsymbol{\beta}}$ and better understand the relationship of interest. 
+
+$$\ell(\boldsymbol{\beta}, \boldsymbol{\eta}) = \sum\limits_{i = 1}^N Q_i\log P_{\boldsymbol{\beta},\boldsymbol{\eta}}(X,X^*,Y, \boldsymbol{Z}) + \sum\limits_{i = 1}^N (1 - Q_i)\log P_{\boldsymbol{\beta},\boldsymbol{\eta}}(Y, X^*, \boldsymbol{Z}).$$
+  
+
+  
+## Next Steps {.center}
+
+  1. Implement this MLE in an R package.
+  2. Conduct simulations to assess its bias and efficiency.
+  3. Apply this estimator to our real data.
+  
+::: {.notes}
+up next: references
+:::
+
+## References {.scrollable .smaller}
+
+S. R. Cole, H. Chu, and S. Greenland. Multiple-imputation for measurement-error correction. International Journal of Epidemiology, 35(4):1074–1081, 2006.
+
+K. M. Flegal, P. M. Keyl, and F. J. Nieto. Differential misclassification arising from nondifferential errors in exposure measurement. American Journal of Epidemiology, 134(10):1233–1246, 1991.
+
+E. Gucciardi, M. Vahabi, N. Norris, J. P. Del Monte, and C. Farnum. The intersection between food insecurity and diabetes: a review. Current nutrition reports, 3:324–332, 2014.
+
+World Health Organization. Healthy diet, 2019. URL https://iris.who.int/handle/10665/325828.
+
+## References {.scrollable .smaller}
+
+P. A. Shaw, R. H. Keogh, et al. STRATOS guidance document on measurement error and misclassification of variables in observational epidemiology: part 2—more complex methods of adjustment and advanced
+topics. Statistics in medicine, 39(16):2232–2263, 2020.
+
+B. E. Shepherd, P. A. Shaw, and L. E. Dodd. Using audit information to adjust parameter estimates for data errors in clinical trials. Clinical Trials, 9(6):721–729, 2012.
+
+N. Speybroeck, B. Devleesschauwer, L. Joseph, and D. Berkvens. Misclassification errors in prevalence estimation: Bayesian handling with care. International journal of public health, 58:791–795, 2013.
+
+L. Tang, R. H. Lyles, C. C. King, D. D. Celentano, and Y. Lo. Binary regression with differentially misclassified response and exposure variables. Statistics in Medicine, 34(9):1605–1620, 2015.
+
+
+
+
+## Thank You! {.center}
+
+  - Dr. Lotspeich for her guidance
+  - The SESH Lab for their advice on this talk
+  - Dr. McGowan for her Quarto skills
+  - The audience for coming today!!!
+  
+
+

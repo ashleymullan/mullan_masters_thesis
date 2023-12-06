@@ -2,3 +2,11 @@
 pois_reg.html
 
 .DS_Store
+
+pois_reg_files/figure-html/
+
+pois_reg_files/libs/bootstrap/
+
+pois_reg_files/libs/clipboard/
+
+pois_reg_files/libs/quarto-html/

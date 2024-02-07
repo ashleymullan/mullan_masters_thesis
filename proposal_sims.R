@@ -74,7 +74,7 @@ negative_ell <- function(beta_eta, data){
     
     p_ygiven_xz <- dpois(Y[Q == 0], exp(beta[1] + beta[2]*x_options[,i] + beta[3]*Z[Q == 0]))
     p1_Q1 <- sf(eta[1] + eta[2]*Xstar[Q == 0] + eta[3]*Z[Q == 0]) #length n
-    p_x_given_xtarz <- p1_Q1^x_options[,i] * (1 - p1_Q1)^(1-x_options[,i])  
+    p_x_given_xstarz <- p1_Q1^x_options[,i] * (1 - p1_Q1)^(1-x_options[,i])  
     P3 <- P3 + p_ygiven_xz * p_x_given_xstarz
 
   }
@@ -119,7 +119,7 @@ results <- results |>
          .after = fpr
   ) 
 
-#Sims of Bad Methods
+#Sims of Bad Methods and My Badly Written Method
 set.seed(1031)
 for (i in 1:nrow(results)) {
   df <- generate_data(n = results$n[i], 

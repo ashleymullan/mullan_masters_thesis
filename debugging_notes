@@ -1,0 +1,12 @@
+notes: 
+
+15 of 93%, could align with (0,0,0) where tuple is (X, X*, Z)
+7 of 10%, could align with the (1,0,0) and (0,1,0) pairs
+why do I have 58 left over?
+
+i think it's in the non queried portion
+
+
+feb 7:
+potential issue: Q is generated twice, once with and without samplequeried <- data |> filter(Q == 1)
+tried a new implementation of the same thing, runs but is off even when starting close to it

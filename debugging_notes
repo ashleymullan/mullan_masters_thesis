@@ -10,3 +10,6 @@ i think it's in the non queried portion
 feb 7:
 potential issue: Q is generated twice, once with and without samplequeried <- data |> filter(Q == 1)
 tried a new implementation of the same thing, runs but is off even when starting close to it
+
+sarah's and mine match in the unqueried piece, the issue is in the queried piece
+hers converges appropriately

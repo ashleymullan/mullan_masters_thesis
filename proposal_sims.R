@@ -138,8 +138,8 @@ for (i in 1:nrow(results)) {
                      size = (1 - results$missingness[i]) * nrow(df),
                      replace = FALSE)
   
-  df <- df |>
-    mutate(Q = ifelse(id %in% kept_ids, 1, 0)) #figure out Q
+  #df <- df |>
+   # mutate(Q = ifelse(id %in% kept_ids, 1, 0)) #figure out Q
   
   
   #gold standard

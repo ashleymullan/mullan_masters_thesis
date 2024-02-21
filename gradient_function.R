@@ -68,4 +68,6 @@ gradient <- function(dat, #data frame
     (unqueried[,zname] * exp(purple)) /
     (1 + exp(purple)) |> #unqueried piece
     sum()
+  
+  return(c(db0, db1, db2, dn0, dn1, dn2))
 }

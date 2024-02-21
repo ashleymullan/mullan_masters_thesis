@@ -11,13 +11,13 @@ eta_finder <- function(fpr, tpr){
   return(c(eta0, eta1, eta2))
 }
 
-loglik <- function(beta_eta, data, y, x, z, xstar, q, 
+loglik <- function(beta_eta, data, y_name, x_name, z_name, xstar_name, q_name, 
                    negate = TRUE, verbose = FALSE) {
-  y <- data |> pull(y)
-  x <- data |> pull(x)
-  z <- data |> pull(z)
-  xstar <- data |> pull(xstar)
-  q <- data |> pull(q)
+  y <- data |> pull(y_name)
+  x <- data |> pull(x_name)
+  z <- data |> pull(z_name)
+  xstar <- data |> pull(xstar_name)
+  q <- data |> pull(q_name)
   ## If q = 1, return log(P(Y|X,Z)P(X|X*,Z))
   lambdaY = exp(beta_eta[1] + beta_eta[2] * x + beta_eta[3] * z)
   sigX = 1 / (1 + exp(- (beta_eta[4] + beta_eta[5] * xstar + beta_eta[6] * z)))
@@ -40,10 +40,10 @@ loglik <- function(beta_eta, data, y, x, z, xstar, q,
 }
 
 set.seed(1031) ## be a reproducible queen
-num_sims <- 10000
+num_sims <- 10
 results <- expand.grid(sim_id = 1:num_sims,
                        n = c(100, 1000, 10000), #medium, large, larger sample size
-                       error_code = "M",
+                       error_code = "M", 
                        missingness = 0.50, 
                        betahat0_gs = NA, betahat1_gs = NA, betahat2_gs = NA, 
                        se_betahat0_gs = NA, se_betahat1_gs = NA, se_betahat2_gs = NA,
@@ -118,11 +118,11 @@ for (r in 1:nrow(results)) {
                 fn = loglik,
                 # gr = ??, #FILL ME IN
                 data = dat,
-                y = "Y",
-                x = "X",
-                z = "Z",
-                xstar = "Xstar",
-                q = "Q",
+                y_name = "Y",
+                x_name = "X",
+                z_name = "Z",
+                xstar_name = "Xstar",
+                q_name = "Q",
                 method = "BFGS",
                 hessian = TRUE)
   

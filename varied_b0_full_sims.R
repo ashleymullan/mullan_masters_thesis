@@ -8,7 +8,6 @@ eta_finder <- function(fpr, tpr){
 
 # True values of the model coefficients 
 b0 = 2 ## intercept
-b1 = 3 ## log prevalence ratio for X (conditioning on Z)
 b2 = 4 ## log prevalence ratio for Z (conditioning on X)
 e = eta_finder(fpr = 0.1, tpr = 0.9)
 
@@ -76,7 +75,7 @@ loglik_mat = function(beta_eta,
 
 # Simulation to check that the "gold standard" model returns correct estimates 
 set.seed(1031) ## be a reproducible queen
-num_reps = 6000
+num_reps = 18000
 res = data.frame(rep = 1:num_reps, code = NA, 
                  our_beta0 = NA, our_beta1 = NA, our_beta2 = NA, 
                  cc_beta0 = NA, cc_beta1 = NA, cc_beta2 = NA,
@@ -86,6 +85,10 @@ res = data.frame(rep = 1:num_reps, code = NA,
                  n = c(rep(100, times = num_reps / 3), 
                        rep(1000, times = num_reps / 3), 
                        rep(10000, times = num_reps / 3)),
+                 q = rep(0.75, times = num_reps),
+                 tb1 = rep(c(rep(ADD ME, times = num_reps / 9),
+                             rep(ADD ME, times = num_reps / 9),
+                             rep(ADD ME, times = num_reps / 9)), times = 3),
                  our_beta0_se = NA, our_beta1_se = NA, our_beta2_se = NA, 
                  cc_beta0_se = NA, cc_beta1_se = NA, cc_beta2_se = NA,
                  naive_beta0_se = NA, naive_beta1_se = NA, naive_beta2_se = NA,
@@ -93,18 +96,19 @@ res = data.frame(rep = 1:num_reps, code = NA,
 print(paste("current time:", Sys.time()))
 for (r in 1:num_reps) {
   # Simulate data 
+  b1 = res$tb1[r]
   z = rnorm(n = res$n[r]) #rbinom(n = 10000, size = 1, prob = 0.3) ## Z ~ Bern(p = 0.3)
   xstar = rbinom(n = res$n[r], size = 1, prob = 1 / (1 + exp(- (1 + 2 * z)))) 
   x = rbinom(n = res$n[r], size = 1, prob = 1 / (1 + exp(-(e[1] + e[2] * xstar + e[3] * z))))
   lambda = exp(b0 + b1 * x + b2 * z) ## mean of the Poisson distribution for Y|X,Z
   y = rpois(n = res$n[r], lambda = lambda) ## Y|X,Z ~ Pois(lambda), where lambda is a function of X, Z
-  q = rbinom(n = res$n[r], size = 1, prob = 0.75) #0.25) ## queried indicator
+  q = rbinom(n = res$n[r], size = 1, prob = res$q[r]) #0.25) ## queried indicator
   dat = data.frame(y, x, z, xstar, q) 
   
   cc = glm(formula = y ~ x + z, 
-      data = dat, 
-      family = poisson, 
-      subset = q == 1)
+           data = dat, 
+           family = poisson, 
+           subset = q == 1)
   
   cc_se = summary(cc)$coefficients[,"Std. Error"]
   
@@ -120,12 +124,12 @@ for (r in 1:num_reps) {
                  subset = q == 1)$coefficients)
   
   naive_fit = summary(glm(formula = y ~ xstar + z,
-                  data = dat,
-                  family = poisson))$coefficients
+                          data = dat,
+                          family = poisson))$coefficients
   
   gs_fit = summary(glm(formula = y ~ x + z,
-               data = dat,
-               family = poisson))$coefficients
+                       data = dat,
+                       family = poisson))$coefficients
   
   optim_res = optim(fn = loglik_mat, 
                     par = cc_fit, 
@@ -139,11 +143,11 @@ for (r in 1:num_reps) {
                     data = dat)
   num_analysis_covar = 3
   optim_vcov = tryCatch(expr = solve(optim_res$hessian)[1:num_analysis_covar, 1:num_analysis_covar],
-                       error = function(err) {
-                         matrix(data = NA, 
-                                nrow = num_analysis_covar, 
-                                ncol = num_analysis_covar)
-                       })
+                        error = function(err) {
+                          matrix(data = NA, 
+                                 nrow = num_analysis_covar, 
+                                 ncol = num_analysis_covar)
+                        })
   
   res[r, "code"] = optim_res$convergence
   res[r, "our_beta0"] = optim_res$par[1]
@@ -179,5 +183,5 @@ for (r in 1:num_reps) {
     print(paste("current time:", Sys.time()))}
 }
 
-write.csv(res, "varied_n_full_sims.csv")
+write.csv(res, "varied_b0_full_sims.csv")
 

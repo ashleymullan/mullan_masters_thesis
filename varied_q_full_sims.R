@@ -76,17 +76,25 @@ loglik_mat = function(beta_eta,
 
 # Simulation to check that the "gold standard" model returns correct estimates 
 set.seed(1031) ## be a reproducible queen
-num_reps = 6000
+num_reps = 30000
 res = data.frame(rep = 1:num_reps, code = NA, 
                  our_beta0 = NA, our_beta1 = NA, our_beta2 = NA, 
                  cc_beta0 = NA, cc_beta1 = NA, cc_beta2 = NA,
                  naive_beta0 = NA, naive_beta1 = NA, naive_beta2 = NA,
                  gs_beta0 = NA, gs_beta1 = NA, gs_beta2 = NA,
                  eta0 = NA, eta1 = NA, eta2 = NA,
-                 n = rep(1000, times = num_reps),
-                 q = c(rep(0.50, times = num_reps / 3), 
-                       rep(0.75, times = num_reps / 3), 
-                       rep(0.90, times = num_reps / 3)))
+                 n = c(rep(100, times = num_reps / 3), 
+                       rep(1000, times = num_reps / 3), 
+                       rep(10000, times = num_reps / 3)),
+                 q = rep(c(rep(0.10, times = num_reps / 15),
+                       rep(0.25, times = num_reps / 15),
+                       rep(0.50, times = num_reps / 15), 
+                       rep(0.75, times = num_reps / 15), 
+                       rep(0.90, times = num_reps / 15)), times = 3),
+                 our_beta0_se = NA, our_beta1_se = NA, our_beta2_se = NA, 
+                 cc_beta0_se = NA, cc_beta1_se = NA, cc_beta2_se = NA,
+                 naive_beta0_se = NA, naive_beta1_se = NA, naive_beta2_se = NA,
+                 gs_beta0_se = NA, gs_beta1_se = NA, gs_beta2_se = NA)
 print(paste("current time:", Sys.time()))
 for (r in 1:num_reps) {
   # Simulate data 
@@ -97,6 +105,13 @@ for (r in 1:num_reps) {
   y = rpois(n = res$n[r], lambda = lambda) ## Y|X,Z ~ Pois(lambda), where lambda is a function of X, Z
   q = rbinom(n = res$n[r], size = 1, prob = res$q[r]) #0.25) ## queried indicator
   dat = data.frame(y, x, z, xstar, q) 
+  
+  cc = glm(formula = y ~ x + z, 
+           data = dat, 
+           family = poisson, 
+           subset = q == 1)
+  
+  cc_se = summary(cc)$coefficients[,"Std. Error"]
   
   cc_fit = glm(formula = y ~ x + z, 
                data = dat, 
@@ -109,13 +124,14 @@ for (r in 1:num_reps) {
                  family = binomial, 
                  subset = q == 1)$coefficients)
   
-  naive_fit = glm(formula = y ~ xstar + z,
-                  data = dat,
-                  family = poisson)$coefficients
+  naive_fit = summary(glm(formula = y ~ xstar + z,
+                          data = dat,
+                          family = poisson))$coefficients
   
-  gs_fit = glm(formula = y ~ x + z,
-               data = dat,
-               family = poisson)$coefficients
+  gs_fit = summary(glm(formula = y ~ x + z,
+                       data = dat,
+                       family = poisson))$coefficients
+  
   optim_res = optim(fn = loglik_mat, 
                     par = cc_fit, 
                     hessian = TRUE, 
@@ -126,28 +142,47 @@ for (r in 1:num_reps) {
                     Xstar_name = "xstar",
                     Q_name = "q",
                     data = dat)
+  num_analysis_covar = 3
+  optim_vcov = tryCatch(expr = solve(optim_res$hessian)[1:num_analysis_covar, 1:num_analysis_covar],
+                        error = function(err) {
+                          matrix(data = NA, 
+                                 nrow = num_analysis_covar, 
+                                 ncol = num_analysis_covar)
+                        })
   
   res[r, "code"] = optim_res$convergence
   res[r, "our_beta0"] = optim_res$par[1]
   res[r, "our_beta1"] = optim_res$par[2]
   res[r, "our_beta2"] = optim_res$par[3]
+  res[r, "our_beta0_se"] = sqrt(diag(optim_vcov))[1]
+  res[r, "our_beta1_se"] = sqrt(diag(optim_vcov))[2]
+  res[r, "our_beta2_se"] = sqrt(diag(optim_vcov))[3]
   res[r, "eta0"] = optim_res$par[4]
   res[r, "eta1"] = optim_res$par[5]
   res[r, "eta2"] = optim_res$par[6]
   res[r, "cc_beta0"] = cc_fit[1]
   res[r, "cc_beta1"] = cc_fit[2]
   res[r, "cc_beta2"] = cc_fit[3]
-  res[r, "naive_beta0"] = naive_fit[1]
-  res[r, "naive_beta1"] = naive_fit[2]
-  res[r, "naive_beta2"] = naive_fit[3]
-  res[r, "gs_beta0"] = gs_fit[1]
-  res[r, "gs_beta1"] = gs_fit[2]
-  res[r, "gs_beta2"] = gs_fit[3]
+  res[r, "cc_beta0_se"] = cc_se[1]
+  res[r, "cc_beta1_se"] = cc_se[2]
+  res[r, "cc_beta2_se"] = cc_se[3]
+  res[r, "naive_beta0"] = naive_fit[1,"Estimate"]
+  res[r, "naive_beta1"] = naive_fit[2,"Estimate"]
+  res[r, "naive_beta2"] = naive_fit[3,"Estimate"]
+  res[r, "naive_beta0_se"] = naive_fit[1,"Std. Error"]
+  res[r, "naive_beta1_se"] = naive_fit[2,"Std. Error"]
+  res[r, "naive_beta2_se"] = naive_fit[3,"Std. Error"]
+  res[r, "gs_beta0"] = gs_fit[1, "Estimate"]
+  res[r, "gs_beta1"] = gs_fit[2, "Estimate"]
+  res[r, "gs_beta2"] = gs_fit[3, "Estimate"]
+  res[r, "gs_beta0_se"] = gs_fit[1, "Std. Error"]
+  res[r, "gs_beta1_se"] = gs_fit[2, "Std. Error"]
+  res[r, "gs_beta2_se"] = gs_fit[3, "Std. Error"]
   
   if(r %% 100 == 0) {
     print(paste("rep #:", r))
     print(paste("current time:", Sys.time()))}
 }
 
-write.csv(res, "/Users/ashleymullan/Documents/Grad School/Wake Forest/M.S. Coursework/Research/Food-Access/masters_thesis/varied_q_full_sims.csv")
+write.csv(res, "varied_q_full_sims.csv")
 
